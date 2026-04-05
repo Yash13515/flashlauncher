@@ -100,12 +100,17 @@ class FullStackHandler(http.server.SimpleHTTPRequestHandler):
             self._proxy_maximizer()
             return
 
-        # ── Static file serving ────────────────────────────────────────
+        # ── Redirect root to the new dashboard ──────────────────────────
         if self.path == '/':
-            self.path = '/dashboard-v2/index.html'
-        elif self.path == '/old' or self.path == '/old/':
+            self.send_response(302)
+            self.send_header('Location', '/dashboard-v2/index.html')
+            self.end_headers()
+            return
+
+        # ── Legacy route ──────────────────────────────────────────────
+        if self.path == '/old' or self.path == '/old/':
             self.path = '/index.html'
-            
+
         super().do_GET()
 
     def do_POST(self):
