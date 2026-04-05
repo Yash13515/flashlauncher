@@ -1,0 +1,11 @@
+# Exclude local executables and temporary files
+ngrok.exe
+ngrok_start.bat
+proxy.js
+proxy.py
+proxy.zip
+ngrok.zip
+.DS_Store
+__pycache__/
+*.log
+*.tmp

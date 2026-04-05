@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search Arb — Campaign Heatmap</title>
+    <meta name="description"
+        content="Maximizer Campaign Heatmap — real-time campaign performance dashboard with heatmap visualization">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+
+    <!-- Top Header Bar -->
+    <header class="top-header">
+        <div class="header-left">
+            <div class="brand">
+                <span class="brand-icon">🚀</span>
+                <span class="brand-text">Maximizer Campaign Heatmap</span>
+            </div>
+            <div class="header-tabs">
+                <button class="tab-btn active" id="tabHeatmap">Campaign Heatmap</button>
+                <button class="tab-btn" id="tabURLStatus">URL Status</button>
+            </div>
+        </div>
+        <div class="header-right">
+            <button class="action-btn" id="exportBtn">📋 Export CSV</button>
+            <button class="action-btn" id="refreshBtn">🔄 Refresh</button>
+            <button class="action-btn toggle-feature" id="liveBidsBtn">⚡ Live Bids</button>
+            <button class="action-btn toggle-feature" id="liveBudgetsBtn">💰 Live Budgets</button>
+            <button class="action-btn toggle-feature" id="liveStatusBtn">📊 Live Status</button>
+            <div class="dark-mode-toggle">
+                <span class="dm-icon">☀️</span>
+                <label class="switch" id="darkModeSwitch">
+                    <input type="checkbox" checked>
+                    <span class="slider"></span>
+                </label>
+                <span class="dm-icon">🌙 Dark</span>
+            </div>
+            <button class="action-btn logout-btn" id="logoutBtn">🔴 Logout</button>
+        </div>
+    </header>
+
+    <!-- Filter Bar -->
+    <div class="filter-bar">
+        <div class="filter-group">
+            <label>USER</label>
+            <select id="userSelect">
+                <option value="yash" selected>Yash</option>
+                <option value="admin">Admin</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label>CAMPAIGN FILTER</label>
+            <input type="text" id="campaignSearch" placeholder="Search campaigns..." class="search-input">
+        </div>
+        <div class="filter-group">
+            <label>COUNTRY</label>
+            <select id="countrySelect">
+                <option value="all" selected>All Countries</option>
+                <option value="US">United States</option>
+                <option value="GB">United Kingdom</option>
+                <option value="CA">Canada</option>
+                <option value="AU">Australia</option>
+                <option value="SP">Spain</option>
+                <option value="RO">Romania</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label>DATE FROM</label>
+            <input type="date" id="dateFrom" class="date-input" value="2026-02-28">
+        </div>
+        <div class="filter-group">
+            <label>DATE TO</label>
+            <input type="date" id="dateTo" class="date-input" value="2026-03-01">
+        </div>
+        <button class="apply-btn" id="applyBtn">✅ Apply</button>
+    </div>
+
+    <!-- Metric / Control Bar -->
+    <div class="metric-bar">
+        <div class="filter-group">
+            <label>DISPLAY METRIC</label>
+            <div class="metric-toggles">
+                <button class="metric-btn active" data-metric="profit">Profit</button>
+                <button class="metric-btn" data-metric="spend">Spend</button>
+                <button class="metric-btn" data-metric="revenue">Revenue</button>
+                <button class="metric-btn" data-metric="roi">ROI</button>
+                <button class="metric-btn" data-metric="rpc">RPC</button>
+                <button class="metric-btn" data-metric="cpx">CPX</button>
+            </div>
+        </div>
+        <div class="control-toggles">
+            <label class="toggle-label">
+                <span class="toggle-dot active-dot"></span> Active Only
+                <label class="mini-switch">
+                    <input type="checkbox" id="activeOnlyToggle">
+                    <span class="mini-slider"></span>
+                </label>
+            </label>
+            <label class="toggle-label">
+                <span class="toggle-dot"></span> Use Cache
+                <label class="mini-switch">
+                    <input type="checkbox" id="cacheToggle" checked>
+                    <span class="mini-slider"></span>
+                </label>
+            </label>
+            <label class="toggle-label">
+                <span class="toggle-dot"></span> 🔮 Predictions
+            </label>
+        </div>
+        <div class="action-buttons">
+            <button class="ctrl-btn fetch-btn" id="fetchBtn">Fetch Data</button>
+            <button class="ctrl-btn sync-btn" id="syncBtn">🔄 Sync Data</button>
+            <button class="ctrl-btn filter-btn" id="filtersBtn">🎯 Filters</button>
+            <button class="ctrl-btn chat-btn" id="chatBtn">💬 Chat</button>
+        </div>
+    </div>
+
+    <!-- Sync Info Bar -->
+    <div class="sync-bar">
+        <span class="sync-info">Last Sync: <strong id="lastSyncTime">28/02/2026, 22:16:41</strong></span>
+        <span class="sync-info">Cached Records: <strong id="cachedRecords">229405</strong></span>
+        <span class="sync-info sep">Total Records: <strong id="totalRecords">415</strong></span>
+    </div>
+
+    <!-- KPI Strip -->
+    <div class="kpi-strip">
+        <div class="kpi-item">
+            <span class="kpi-sublabel">Loss</span>
+            <span class="kpi-label">TOTAL SPEND</span>
+            <span class="kpi-val" id="totalSpend">$0.00</span>
+        </div>
+        <div class="kpi-item">
+            <span class="kpi-sublabel">Profit</span>
+            <span class="kpi-label">TOTAL REVENUE</span>
+            <span class="kpi-val green" id="totalRevenue">$0.00</span>
+        </div>
+        <div class="kpi-item">
+            <span class="kpi-label">TOTAL PROFIT</span>
+            <span class="kpi-val" id="totalProfit">$0.00</span>
+        </div>
+        <div class="kpi-item">
+            <span class="kpi-label">OVERALL ROI</span>
+            <span class="kpi-val" id="overallROI">0%</span>
+        </div>
+    </div>
+
+    <!-- MAIN: Heatmap Table -->
+    <section class="section-panel active" id="panelHeatmap">
+        <div class="table-container">
+            <table class="heatmap-table" id="heatmapTable">
+                <thead id="heatmapHead"></thead>
+                <tbody id="heatmapBody"></tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- SECTION: Day-Parting / URL Status -->
+    <section class="section-panel" id="panelURLStatus">
+        <div class="url-status-panel">
+            <h2>URL Status Monitor</h2>
+            <p class="panel-desc">Monitor the status of campaign URLs in real time.</p>
+            <div id="urlStatusGrid" class="url-grid"></div>
+        </div>
+    </section>
+
+    <!-- Advanced Filters Modal -->
+    <div class="af-overlay" id="afOverlay">
+        <div class="af-modal">
+            <div class="af-header">
+                <span class="af-title">🔍 <strong>Advanced Filters</strong></span>
+                <button class="af-close" id="afClose">✕</button>
+            </div>
+
+            <div class="af-body">
+                <!-- Time Period / Exclude Recent Row -->
+                <div class="af-section af-config-row">
+                    <div class="af-field">
+                        <label class="af-label">TIME PERIOD</label>
+                        <select id="afTimePeriod" class="af-select">
+                            <option value="today">Today</option>
+                            <option value="last3h" selected>Last 3 Hours</option>
+                            <option value="last4h">Last 4 Hours</option>
+                            <option value="last6h">Last 6 Hours</option>
+                            <option value="last12h">Last 12 Hours</option>
+                            <option value="yesterday">Yesterday</option>
+                            <option value="last3d">Last 3 Days</option>
+                            <option value="last7d">Last 7 Days</option>
+                            <option value="last30d">Last 30 Days</option>
+                        </select>
+                    </div>
+                    <div class="af-field">
+                        <label class="af-label">EXCLUDE RECENT</label>
+                        <select id="afExcludeRecent" class="af-select">
+                            <option value="none">None</option>
+                            <option value="1h" selected>Last 1 Hour</option>
+                            <option value="2h">Last 2 Hours</option>
+                            <option value="3h">Last 3 Hours</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Analysis Mode -->
+                <div class="af-section af-config-row">
+                    <div class="af-field">
+                        <label class="af-label">ANALYSIS MODE</label>
+                        <select id="afAnalysisMode" class="af-select af-select-wide">
+                            <option value="aggregated">Aggregated (Sum Total)</option>
+                            <option value="eachHour" selected>Each Hour (All Must Match)</option>
+                            <option value="eachDay">Each Day (All Must Match)</option>
+                            <option value="anyHour">Any Hour (At Least One)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Conditions Container -->
+                <div id="afConditionsContainer">
+                    <!-- OR groups rendered here by JS -->
+                </div>
+            </div>
+
+            <div class="af-footer">
+                <button class="af-btn af-btn-or" id="afAddOrGroup">+ Add OR Group</button>
+                <button class="af-btn af-btn-apply" id="afApplyFilters">🔍 Apply Filters</button>
+                <button class="af-btn af-btn-clear" id="afClearAll">Clear All</button>
+                <select class="af-select af-preset-select" id="afLoadPreset">
+                    <option value="">Load Preset...</option>
+                    <option value="highROI">High ROI Campaigns</option>
+                    <option value="bigSpend">Top Spenders</option>
+                    <option value="lowCPA">Low CPA Winners</option>
+                </select>
+                <button class="af-btn af-btn-save" id="afSavePreset">🇺🇸 Save Preset</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Campaign Context Menu -->
+    <div class="camp-ctx-menu" id="campCtxMenu">
+        <div class="ctx-preview">
+            <div class="ctx-field-label">HEADLINE</div>
+            <div class="ctx-field-val" id="ctxHeadline"></div>
+            <div class="ctx-field-label">PRIMARY TEXT</div>
+            <div class="ctx-field-val" id="ctxPrimaryText"></div>
+            <div class="ctx-field-label">QUERY</div>
+            <div class="ctx-field-val ctx-query" id="ctxQuery"></div>
+        </div>
+        <button class="ctx-duplicate-btn" id="ctxDuplicateBtn">📋 Duplicate Campaign</button>
+    </div>
+
+    <!-- Campaign Launcher Panel -->
+    <div class="launcher-overlay" id="launcherOverlay">
+        <div class="launcher-panel" id="launcherPanel">
+
+            <!-- Panel Header -->
+            <div class="launcher-header">
+                <span class="launcher-title">🚀 Campaign Launcher</span>
+                <div class="launcher-header-right">
+                    <span class="launcher-source-name" id="launcherSourceName">—</span>
+                    <button class="launcher-close-btn" id="launcherCloseBtn">✕</button>
+                </div>
+            </div>
+
+            <!-- Section A: Target Settings -->
+            <div class="launcher-section">
+                <div class="launcher-section-label">🎯 TARGET SETTINGS</div>
+                <div class="target-settings-grid">
+                    <div class="ts-field">
+                        <label>USER ACCOUNT</label>
+                        <select id="tsUserAccount">
+                            <option>👤 Yash</option>
+                        </select>
+                    </div>
+                    <div class="ts-field">
+                        <label>AD ACCOUNT</label>
+                        <select id="tsAdAccount">
+                            <option value="">-- Select Ad Account --</option>
+                            <option value="web_cue_68">Web Cue 68</option>
+                            <option value="web_cue_12">Web Cue 12</option>
+                            <option value="custom">Custom...</option>
+                        </select>
+                    </div>
+                    <div class="ts-field">
+                        <label>FACEBOOK PAGE</label>
+                        <select id="tsFbPage">
+                            <option value="">-- Select page --</option>
+                        </select>
+                    </div>
+                    <div class="ts-field">
+                        <label>PIXEL</label>
+                        <select id="tsPixel">
+                            <option value="">-- Select pixel --</option>
+                        </select>
+                    </div>
+                    <div class="ts-field">
+                        <label>BUDGET PER CAMPAIGN (MAX $10)</label>
+                        <input type="number" id="tsBudget" value="5" min="1" max="10" step="0.5">
+                    </div>
+                    <div class="ts-field">
+                        <label>BID STRATEGY</label>
+                        <select id="tsBidStrategy">
+                            <option value="cost_cap">Cost Cap</option>
+                            <option value="bid_cap">Bid Cap</option>
+                            <option value="lowest_cost">Lowest Cost</option>
+                        </select>
+                    </div>
+                    <div class="ts-field">
+                        <label>BID/COST CAP ($)</label>
+                        <input type="number" id="tsBidCap" value="1.00" min="0.01" step="0.01">
+                    </div>
+                    <div class="ts-field">
+                        <label>SPECIAL AD CATEGORY</label>
+                        <select id="tsSpecialCat">
+                            <option value="none">None (Regular Ad)</option>
+                            <option value="housing">Housing</option>
+                            <option value="credit">Credit</option>
+                            <option value="employment">Employment</option>
+                        </select>
+                    </div>
+                    <div class="ts-field">
+                        <label>CAMPAIGN OBJECTIVE</label>
+                        <select id="tsCampaignObjective">
+                            <option value="OUTCOME_TRAFFIC">Traffic</option>
+                            <option value="OUTCOME_LEADS">Lead Generation</option>
+                            <option value="OUTCOME_SALES">Sales / Conversions</option>
+                            <option value="OUTCOME_AWARENESS">Brand Awareness</option>
+                            <option value="OUTCOME_ENGAGEMENT">Engagement</option>
+                        </select>
+                    </div>
+                </div>
+                <div style="display:flex; align-items:center; gap:12px; margin-top:6px;">
+                    <label class="ts-country-check">
+                        <input type="checkbox" id="tsDiffCountry">
+                        <span>🌍 Launch in different country (default: US)</span>
+                    </label>
+                    <label class="ts-multi-check">
+                        <input type="checkbox" id="tsMultiAd">
+                        <span>Launch to multiple ad accounts/pages (show per-row selection)</span>
+                    </label>
+                    <button class="reload-meta-btn" id="reloadMetaBtn" onclick="loadMetaData()">🔄 Reload Meta Data</button>
+                </div>
+            </div>
+
+            <!-- Section B: Create Campaign Copies -->
+            <div class="launcher-section">
+                <div class="launcher-section-label">📋 CREATE CAMPAIGN COPIES</div>
+                <p class="launcher-desc">Each row = 1 campaign. Uses default account/page above, or override per-row if
+                    enabled.</p>
+
+                <!-- Name Generator -->
+                <div class="name-gen-row">
+                    <div class="ng-field ng-wide">
+                        <label>BASE CAMPAIGN NAME</label>
+                        <input type="text" id="ngBaseName"
+                            placeholder="e.g. GB-en-SmallDogAdoption-yash-14/1-pitchspell-forum-">
+                    </div>
+                    <div class="ng-field ng-narrow">
+                        <label>NUMBER</label>
+                        <input type="number" id="ngNumber" value="1" min="1" max="50">
+                    </div>
+                    <div class="ng-field ng-narrow">
+                        <label>SUFFIX</label>
+                        <input type="text" id="ngSuffix" placeholder="dup">
+                    </div>
+                    <button class="ng-generate-btn" id="ngGenerateBtn">✅ Generate</button>
+                </div>
+
+                <!-- Apply to All toolbar -->
+                <div class="apply-all-bar">
+                    <span class="apply-all-label">Apply to All:</span>
+                    <button class="apply-btn-pill budget-pill" data-field="budget">💰 Budget</button>
+                    <button class="apply-btn-pill bid-pill" data-field="bidStrategy">⚡ Bid Strategy</button>
+                    <button class="apply-btn-pill query-pill" data-field="query">🔍 Query</button>
+                    <button class="apply-btn-pill title-pill" data-field="headline">📝 Title</button>
+                    <button class="apply-btn-pill body-pill" data-field="primaryText">📄 Body</button>
+                    <button class="apply-btn-pill img-pill" data-field="image">🖼️ Source Image</button>
+                    <button class="apply-btn-pill bulk-ai-pill" id="bulkAiBtn">🤖 Bulk AI</button>
+                </div>
+
+                <!-- Editable Copies Table -->
+                <div class="copies-table-wrap">
+                    <table class="copies-table" id="copiesTable">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>CAMPAIGN NAME</th>
+                                <th>QUERY</th>
+                                <th>HEADLINE</th>
+                                <th>PRIMARY TEXT</th>
+                                <th>$</th>
+                                <th>TYPE</th>
+                                <th>LAND</th>
+                                <th>FEED</th>
+                                <th>IMAGE</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="copiesTableBody">
+                            <!-- Rows rendered by JS -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Add Row -->
+                <button class="add-row-btn" id="addCopyRowBtn">➕ Add Row</button>
+            </div>
+
+            <!-- Launcher Footer -->
+            <div class="launcher-footer">
+                <div class="launcher-footer-left">
+                    <button class="lf-btn preview-btn" id="launcherPreviewBtn">👁️ Preview</button>
+                    <button class="lf-btn reset-btn" id="launcherResetBtn">🔄 Reset</button>
+                </div>
+                <div class="launcher-footer-right">
+                    <button class="lf-btn submit-btn" id="launcherSubmitBtn">🚀 Submit to Maximizer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tooltip -->
+    <div class="tooltip" id="tooltip"></div>
+
+    <script src="app.js"></script>
+</body>
+
+</html>
