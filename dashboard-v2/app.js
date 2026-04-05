@@ -209,6 +209,30 @@ async function fetchPerformanceData(dateStart, dateEnd, includeHour = false) {
 }
 
 /**
+ * Update Meta Budget via Local Proxy
+ */
+async function updateMetaBudget(campaignName, newBudget) {
+    try {
+        const response = await fetch('/meta/update-budget', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                campaignName: campaignName,
+                budget: newBudget
+            })
+        });
+
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Failed to update budget');
+        return data;
+
+    } catch (error) {
+        console.error('Budget Update Error:', error);
+        throw error;
+    }
+}
+
+/**
  * Data Aggregation Logic
  */
 function calculateTotals(apiData) {
@@ -497,6 +521,34 @@ function renderTable(data) {
             launchBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 if (window.Launcher) window.Launcher.open(name);
+            });
+        }
+
+        const budgetPill = row.querySelector('.budget-pill');
+        if (budgetPill) {
+            budgetPill.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                const currentBudget = budgetPill.textContent.replace('$', '');
+                const newBudget = prompt(`Enter new daily budget for "${name}":`, currentBudget);
+                
+                if (newBudget && newBudget !== currentBudget) {
+                    try {
+                        budgetPill.classList.add('syncing');
+                        budgetPill.textContent = '...';
+                        
+                        await updateMetaBudget(name, newBudget);
+                        
+                        budgetPill.textContent = `$${parseFloat(newBudget).toFixed(2)}`;
+                        budgetPill.classList.remove('syncing');
+                        budgetPill.classList.add('success-flash');
+                        setTimeout(() => budgetPill.classList.remove('success-flash'), 2000);
+                        
+                    } catch (err) {
+                        budgetPill.textContent = `$${currentBudget}`;
+                        budgetPill.classList.remove('syncing');
+                        alert(`Scale Failed: ${err.message}`);
+                    }
+                }
             });
         }
     });

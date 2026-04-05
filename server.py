@@ -117,6 +117,9 @@ class FullStackHandler(http.server.SimpleHTTPRequestHandler):
         if self.path == '/meta/campaign':
             self._create_meta_campaign()
             return
+        if self.path == '/meta/update-budget':
+            self._update_meta_budget()
+            return
         if self.path.startswith('/api/'):
             self._proxy_maximizer()
             return
@@ -164,6 +167,44 @@ class FullStackHandler(http.server.SimpleHTTPRequestHandler):
             send_json(self, e.code, {'error': err_body})
         except Exception as e:
             print(f"[Meta Error] {str(e)}")
+            send_json(self, 500, {'error': str(e)})
+
+    # ─── Update Meta Budget ──────────────────────────────────────────
+    def _update_meta_budget(self):
+        try:
+            length = int(self.headers.get('Content-Length', 0))
+            body = json.loads(self.rfile.read(length)) if length else {}
+            
+            c_name = body.get('campaignName')
+            new_budget_usd = float(body.get('budget', 5))
+            ad_account = body.get('adAccount', META_AD_ACCOUNT)
+            if not ad_account.startswith('act_'): ad_account = 'act_' + ad_account
+
+            # 1. Search for campaign ID by name
+            search_params = {
+                'fields': 'id,name',
+                'filtering': json.dumps([{'field': 'name', 'operator': 'EQUAL', 'value': c_name}])
+            }
+            search_results = meta_get(f'/{ad_account}/campaigns', search_params)
+            data = search_results.get('data', [])
+
+            if not data:
+                send_json(self, 404, {'error': f'Campaign "{c_name}" not found on Meta account {ad_account}'})
+                return
+
+            campaign_id = data[0]['id']
+
+            # 2. Update Budget
+            update_params = {
+                'daily_budget': int(new_budget_usd * 100)
+            }
+            result = meta_post(f'/{campaign_id}', update_params)
+            
+            send_json(self, 200, {'success': True, 'id': campaign_id, 'result': result})
+            print(f"[Meta] Updated budget for {c_name} ({campaign_id}) to ${new_budget_usd}")
+
+        except Exception as e:
+            print(f"[Meta Error Update] {str(e)}")
             send_json(self, 500, {'error': str(e)})
 
     # ─── Maximizer Proxy ──────────────────────────────────────────────
